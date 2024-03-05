@@ -1,0 +1,43 @@
+name: Requirement
+description: Maak een nieuwe requirement aan
+title: "[Req]: "
+labels: ["requirement"]
+projects: ["minvws/49"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Vul hier een nieuw requirement in waar de landelijke toestemmingsvoorziening aan moet voldoen.   
+  - type: dropdown
+    id: user
+    attributes:
+      label: Gebruiker
+      description: Voor wie is dit requirement?
+      options:
+        - Persoon
+        - Zorgaanbieder
+        - Behandelaar
+        - Zorgtoepassing software
+        - Anders
+      default: 0
+  - type: input
+    id: action
+    attributes:
+      label: Wat wil de gebruiker doen?
+      placeholder: Als [gebruiker] wil ik ...
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Motivatie
+      description: Wat is de achtergrond van dit requirement?
+    validations:
+      required: true
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Extra informatie
+      description: Wat is nog meer relevant voor het verwerken van dit requirment?
+    validations:
+      required: false
