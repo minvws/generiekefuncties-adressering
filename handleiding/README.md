@@ -7,7 +7,7 @@ In deze handleiding zullen we de meest voorkomende acties uitleggen:
 * [Vocabulair](#vocabulair)
 * [Werken met tekstbestanden](#werken-met-tekstbestanden)
 * [Aanmaken van een nieuw document](#aanmaken-van-een-nieuw-document)
-* [Goedkeuren van een suggestie](reviewen-en-goedkeueren-van-voorgestelde-wijzigingen)
+* [Goedkeuren van een suggestie](#reviewen-en-goedkeueren-van-voorgestelde-wijzigingen)
 
 ## Vocabulair
 
