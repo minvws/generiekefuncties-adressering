@@ -42,3 +42,6 @@ Daarnaast kent elke requirement nog andere labels als indiener, soort functional
 
 ## Opmerkingen achterlaten
 Reacties en vragen op requirements kunnen bij een requirement toegevoegd worden. Je kunt op een requirement klikken en onderaan een comment achterlaten. Deze worden door de deelnemenrs van de werkgroep bekeken en daarop zal worden gereageerd. Het tempo waarop gereageerd wordt is mede afhankelijk van wanneer de betreffende requirement besproken wordt in de werkgroep.
+![image](https://github.com/minvws/generiekefuncties-adressering/assets/158051510/8ae8956c-da32-434c-98bb-f2d04a7602c2)
+
+
