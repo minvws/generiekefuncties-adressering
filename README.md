@@ -12,3 +12,7 @@ Een nieuwe requirement kan worden aangemaakt door het aanmaken van een issue op 
 ## Architectuur
 
 ...
+
+# Handleiding Github
+
+Github werkt net even wat anders dan bijvoorbeeld Office 365 of Google docs. We hebben daarom een [handleiding gemaakt](handleiding/README.md).
