@@ -21,6 +21,6 @@ Niet werkgroepleden zijn uitgenodigd om rond te kijken  en indien je input wilt 
 ## Handleiding Github
 
 Github werkt net even wat anders dan bijvoorbeeld Office 365 of Google docs. We hebben daarom verschillende handleidingen opgesteld 
-(https://github.com/minvws/generiekefuncties-adressering/tree/main/handleiding)https://github.com/minvws/generiekefuncties-adressering/tree/main/handleiding
+https://github.com/minvws/generiekefuncties-adressering/tree/main/handleiding
 Voor vragen kun je ook mailen met: info.generiekefuncties@minvws.nl 
 
