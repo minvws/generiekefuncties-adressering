@@ -355,11 +355,9 @@ Om aan te tonen dat de _Update Supplier_ degene is waar de VP voor bedoeld is, k
     }
   ],
   "recorded": "2023-01-01T00:00:00Z",
-      "who": {
-        "reference": "Organization/mcsd.care-services.nl"
-      }
-    }
-  ],
+  "who": {
+    "reference": "Organization/mcsd.care-services.nl"
+  },
   "signature": [
     {
       "type": "http://hl7.org/fhir/StructureDefinition/Signature",
