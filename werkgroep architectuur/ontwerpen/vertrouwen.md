@@ -176,83 +176,248 @@ Hoe kunnen de SSI concepten worden toegepast op het mCSD profiel? We kunnen de S
 
 #### Zorgorganisatie
 
-Functioneert als **Holder** én potentiële **Verifier**:
+Functioneert als **Holder**
 
 - Beheert eigen organisatie-credentials
+- Presenteert deze aan de eigen **Update Supplier**
+
+#### Care Services Update Supplier
+
+Functioneert primair als **Verifier** én als **Holder**:
+
+- Ontvangt presentations van de Zorgorganisatie
+- Verifieert de credentials van de Zorgorganisatie
 - Publiceert FHIR resources verrijkt met verifiable credentials
-- Verifieert credentials van gerelateerde organisaties
-- Kan ook als Verifier optreden bij ontvangen updates
+- Ondertekent de resources of bundle met een vertrouwensbewijs waarin de authenticiteit van de gegevens wordt bevestigd
 
 #### Care Services Update Consumer
 
 Functioneert primair als **Verifier**:
 
 - Verifieert credentials in ontvangen updates
-- Valideert de authenticiteit van wijzigingen
-- Controleert autorisaties voor updates
+- Verifieert de presentaties van de credentials
+- Verifieert of de presentaties gemaakt zijn voor de **Update Supplier** waar op dat moment de interactie mee is
 - Beheert lokale cache van geverifieerde gegevens
 
 #### Care Services Selective Consumer
 
-Functioneert als **Verifier**:
+De Selective consumer heeft een vertrouwensrelatie met de **Selective Supplier**. Het is dus niet nodig om de credentials te verifiëren.
 
-- Verifieert credentials bij opvragen gegevens
-- Valideert authenticiteit van endpoints
-- Controleert autorisaties en claims
-
-### Trusted Issuers (Externe Rol)
+#### Trusted Issuers (Externe Rol)
 
 - UZI-register, CIBG, IGJ etc.
 - Geen directe mCSD rol
 - Geeft credentials uit aan organisaties
 - Beheert revocation status
 
-## 5. Technische Implementatie
+### 6.2 Gebruik van presentation in FHIR Resources
 
-### 5.1 FHIR Extensies
+Een VC kan een of meerdere claims bevatten. Laten we als voorbeeld een VC nemen die de URA-code en de naam van de organisatie bevat:
 
-- Custom extensions voor vertrouwensbewijzen
-- Validatie mechanismen
-- Voorbeeldcode en snippets
+```json
+{
+  "type": ["VerifiableCredential", "OrganizationCredential"],
+  "issuer": "did:web:cibg.nl",
+  "issuanceDate": "2023-12-15T12:00:00Z",
+  "credentialSubject": {
+    "id": "did:web:ziekenhuis-x.nl",
+    "uraCode": "12345678",
+    "name": "Ziekenhuis X"
+  },
+  "proof": {
+    "type": "Ed25519Signature2020",
+    "created": "2023-12-15T12:00:00Z",
+    "verificationMethod": "did:web:cibg.nl#key-1",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z58...h28"
+  }
+}
+```
 
-### 5.2 Provenance Voorbeelden
+Als we dit proberen te mappen op een FHIR Resource, zou dit er als volgt uit kunnen zien:
+
+```json
+{
+  "resourceType": "Organization",
+  "id": "example-1",
+  "identifier": [
+    {
+      "system": "urn:oid:2.16.840.1.113883",
+      "value": "12345678"
+    },
+    {
+      "system": "https://www.w3.org/TR/did-1.0#",
+      "value": "did:web:ziekenhuis-x.nl"
+    }
+  ],
+  "name": "Ziekenhuis X"
+}
+```
+
+De organisatie publiceert een VP in JWT formaat naar de **Update Supplier**:
+
+```json
+{
+  "iss": "did:web:ziekenhuis-x.nl",
+  "aud": "did:web:mcsd.care-services.nl",
+  "exp": 1631544000,
+  "vp": {
+    "type": ["VerifiableCredential", "OrganizationCredential"],
+    "issuer": "did:web:cibg.nl",
+    "issuanceDate": "2023-12-15T12:00:00Z",
+    "credentialSubject": {
+      "id": "did:web:ziekenhuis-x.nl",
+      "uraCode": "12345678",
+      "name": "Ziekenhuis X"
+    },
+    "proof": {
+      "type": "Ed25519Signature2020",
+      "created": "2023-12-15T12:00:00Z",
+      "verificationMethod": "did:web:cibg.nl#key-1",
+      "proofPurpose": "assertionMethod",
+      "proofValue": "z58...h28"
+    }
+  }
+}
+```
+
+Dit VP bevat een handtekeing gezet door de zorginstelling. De update supplier maakt hier vervolgens een `Provenance` resource van waarin de target verwijst naar zowel het naam veld als de identifier van de organisatie:
+
+```json
+{
+  "resourceType": "Provenance",
+  "id": "prov-1",
+  "target": [
+    {
+      "reference": "Organization/example-1"
+    }
+  ],
+  "recorded": "2023-01-01T00:00:00Z",
+  "target": [
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/targetPath",
+          "valueString": "Organization.identifier[0].value"
+        }
+      ],
+      "reference": "Organization/example-1/_history/1"
+    },
+    {
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/StructureDefinition/targetPath",
+          "valueString": "Organization.name"
+        }
+      ],
+      "reference": "Organization/example-1/_history/1"
+    }
+  ],
+  "agent": [
+    {
+      "who": {
+        "reference": "Organization/example-1",
+        "type": "Organization"
+      }
+    }
+  ],
+  "signature": [
+    {
+      "type": [
+        {
+          "system": "https://www.w3.org/2018/credentials#",
+          "code": "VerifiablePresentation"
+        }
+      ],
+      "when": "2025-02-17T15:00:00Z",
+      "who": {
+        "identifier": {
+          "system": "did:web",
+          "value": "did:web:ziekenhuis-x.nl"
+        }
+      },
+      "data": "base64(JWT-VP)",
+      "targetFormat": "application/jwt",
+      "sigFormat": "application/vc+jwt"
+    }
+  ]
+}
+```
+
+Om aan te tonen dat de _Update Supplier_ degene is waar de VP voor bedoeld is, kan de _Update Supplier_ een aanvullende `Provenance` aan de `Bundle` toevoegen waarin hij het gehele resultaat ondertekend:
 
 ```json
 {
   "resourceType": "Provenance",
   "target": [
     {
-      "reference": "Organization/example"
+      "reference": "Bundle/mscd-sync-example"
     }
   ],
   "recorded": "2023-01-01T00:00:00Z",
-  "agent": [
-    {
       "who": {
-        "reference": "Organization/validator"
-      },
-      "onBehalfOf": {
-        "reference": "Organization/trust-authority"
+        "reference": "Organization/mcsd.care-services.nl"
       }
+    }
+  ],
+  "signature": [
+    {
+      "type": "http://hl7.org/fhir/StructureDefinition/Signature",
+      "data": "base64(JWT-VP)"
     }
   ]
 }
 ```
 
-## 6. Use Cases
+Een update `Bundle` komt er dan vervolgens als volgt uit te zien:
+
+```json
+{
+  "resourceType": "Bundle",
+  "id": "mcsd-sync-example",
+  "entry": [
+    {
+      "id": "example-1",
+      "resourceType": "Organization"
+    },
+    {
+      "id": " prov-1",
+      "resourceType": "Provenance"
+    },
+    {
+      "resourceType": "Provenance",
+      "target": [
+        {
+          "reference": "Bundle/mscd-sync-example"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Zodra een **Update consumer** een update verricht bij de **Update Supplier** kan deze de **Provenance** resource gebruiken om te verifiëren dat de gegevens authentiek:
+
+- De VC is uitegeven door de juiste authentieke bron door de `issuer` van de VC te controleren
+- De holder heeft de VC gepresenteerd aan een **Update Supplier** door signature van de VP te controleren
+- De _Update Supplier_ is de juiste partij door de `aud` in de presentation te gebruiken om het DID document van de _Update Supplier_ op te halen en met de publieke sleutel de tweede provenance op de gehele bundle te verifiëren
+
+Er is nog een optimalisatie mogelijk om voor de DID methode van de _Update Supplier_ een `did:jwk` te gebruiken, zodat de resolve stap overgeslagen kan worden. Dit kan omdat de identiteit van de Update Supplier buiten de synchronizatie stap waarschijnlijk niet hoeft te worden vastgesteld. Dit is echter een implementatie detail.
+
+## 7. Use Cases
 
 - Zorgaanbieder registratie
 - Validatie van specialisaties
 - Updates van contactgegevens
 
-## 7. Best Practices
+## 8. Best Practices
 
 - Governance modellen
 - Update mechanismen
 - Versiebeheer
 - Privacy overwegingen
 
-## 8. Conclusies en Aanbevelingen
+## 9. Conclusies en Aanbevelingen
 
 - Samenvatting belangrijkste punten
 - Implementatie roadmap
