@@ -165,14 +165,54 @@ Een DID:
 - Blijft geldig ook als onderliggende infrastructuur wijzigt
 
 Voorbeeld van een DID:
-`did:web:ziekenhuis-x.nl`
-`did:web:cibg.nl`
 
-## 6. Gebruik van Verifiable Credentials in mCSD
+- `did:web:ziekenhuis-x.nl`
+- `did:web:cibg.nl`
 
-### 6.1 Mapping van SSI rollen naar mCSD rollen
+### 5.3 Mapping van SSI concepten naar mCSD
 
 Hoe kunnen de SSI concepten worden toegepast op het mCSD profiel? We kunnen de SSI rollen als volgt mappen op de mCSD rollen:
+
+| Rol mCSD          | Optie 1                 | Optie 2  | Optie 3      |
+| ----------------- | ----------------------- | -------- | ------------ |
+| Authentieke bron  | Issuer                  | Issuer   | Issuer       |
+| (Zorg)organisatie | Holder                  | -        | Holder       |
+| Update Supplier   | Authorised Intermediate | Holder   | Intermediate |
+| Update Consumer   | Verifier                | Verifier | Verifier     |
+
+De variaties in de opties hebben impact op de volgende aspecten:
+
+- de vertrouwensrelatie tussen (zorg)organisatie en Update Supplier.
+- het ontwerp en hoeveel maatwerkt nodig is om de SSI concepten te integreren met het mCSD profiel.
+- de hoeveelheid validatie operaties wat moet worden uitgevoerd opdat de Update Consumer de gegevens kan vertrouwen.
+
+#### 5.3.1 Optie 1: Getrapte validatie
+
+In Optie 1 heeft de (zorg)organisatie een eigen wallet. De Update Supplier is een dienstverlener die handelt voor de (zorg)organisatie, maar geen vertrouwde partij is. De noodzaak van beperkt vertrouwen is relevant als er maar een paar van dit soort dienstverleners ontstaan en de Update Consumer bijvoorbeeld niet het eigen EPD is.
+
+Bij een aanpassing van een claim in het adresboek, moet (zorg)organisatie een bewijs presenteren in een Verifiable Presentation aan de Update Supplier welke ze naast de FHIR Resources opslaat in bijvoorbeeld een `Provenance` resource. Bij een synchronisatie stap moet de Update supplier in de bundle met de FHIR resources, ook Verifiable Presentations aanbieden. Om aan te tonen dat de Update Supplier daadwerkerlijk geauthoriseerd is, ondertekent het de bundle zelf met een private key die hoort bij de `DID`. De Update Consumer valideert bij de synchronisatie stap de claims in de Verifiable Presentation, vergelijkt ze met de data in de resources en valideert de handtekening op de Bundle. De (zorg)organisatie hoeft maar eenmalig de data aan de Update Supplier aan te tonen. De Update Consumer kan de "machtiging" van de Update Supplier controleren door de presentatie te valideren. De invulling van `Provencance` resources vergt wel land specifieke profielen wat de implementaties complexer maakt.
+
+#### 5.3.2 Optie 2: Directe validatie met Update Supplier als Holder
+
+In Optie 2 heeft de Update Supplier een vertrouwde rol en heeft zelf (toegang tot) de organisatie wallet. Dit vertrouwen is belangrijk want met de toegang tot de wallet kan de Update Supplier zich voordoen als de (zorg)organisatie bij elke authorisatie stap in het zorg informatie stelsel. Als we landelijk maar een beperkt aantal dienstverleners krijgen is deze optie af te raden.
+
+Omdat de Update Supplier nu zelf ook de holder is, kunnen de claims als Verifiable Credential in plaats van Verifiable Presentation in een provencance worden opgeslagen. De Bundle kan vervolgens als een vorm van een presentation worden ondertekend waardoor de Update Supplier aantoont de Holder te zijn. De Update Supplier moet wel een eigen DID per (zorg)organisatie hebben om te voorkomen dat claims van (zorg)organisaties allemaal in een wallet terechtkomen.
+
+#### 5.3.3 Optie 3: Directe validatie met Organisatie als Holder
+
+In Optie 3 is de (zorg)organisatie zelf de holder en de Update Supplier een intermediate. De Update Supplier heeft geen toegang tot de wallet van de (zorg)organisatie. De Update Supplier voegt aan de claims een hint toe waarmee de Update Consumer zelf bij de (zorg)organisatie een validatie stap kan uitvoeren. Deze optie past het beste bij bestaande invulling van SSI waarbij vertrouwen direct is tussen Holder en Verifier. Ook hoeven er weinig uitbreidingen op het mCSD profiel te worden verricht omdat alleen de hint bij de claim moet worden toegevoegd. Het nadeel van deze aanpak is dat elke Update Consumer, na het binnenkrijgen van nieuwe claims, direct bij de Holder een validatie stap moet uitvoeren. Nu is het wel zo dat deze de bewijzen een langdurig geldig zijn en het adresboek over tijd organisch zal groeien. Alleen bij een nieuwe Update Consumer die geintresseerd is in het gehele adresboek en alle claims wil valideren zal deze validatie periode langer zijn.
+
+### 5.4 Evaluatie van de opties
+
+| Optie | Vertrouwen                                                                                          | Ontwerp                                                                                                                     | Schaalbaarheid                                                            |
+| ----- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 1     | Goed, holder heeft zelf controle over wallet en sleutels en machtigt een vertrouwde Update supplier | Complex, een vertrouwde tussenpartij bestaat niet in SSI. Veel maatwerk op FHIR nodig om concepten als VCs en VPs te mappen | Goed, na synchronizatie alle gegevens aanwezig om validatie uit te voeren |
+| 2     | Laag, update supplier heeft toegang tot wallet met alle credentials en sleutels                     | Complex, Veel maatwerk om VCs en VPs te mappen op FHIR resources                                                            | Goed, na synchronizatie alle gegevens aanwezig om validatie uit te voeren |
+| 3     | Goed, holder heeft zelf controle over claims en sleutels                                            | Goed, naast een verwijzing naar de claims in de resources is er weinig maatwerk nodig                                       | Matig, elke Update Consumer moet zelf de claims valideren bij de houder   |
+
+## 6. Optie 1: Validatie bij de bij Update Provider
+
+### 6.1 Mapping van SSI rollen naar mCSD rollen
 
 #### Zorgorganisatie
 
