@@ -299,6 +299,17 @@ Dit VP bevat een handtekeing gezet door de zorginstelling. De update supplier ma
         {
           "url": "http://hl7.org/fhir/StructureDefinition/targetPath",
           "valueString": "Organization.identifier[0].value"
+        },
+        {
+          "url": "https://identity.foundation/presentation-exchange/#jsonpath-syntax-definition",
+          "valueString": "$.vc.credentialSubject.uraCode"
+        },
+        {
+          "url": "https://identity.foundation/presentation-exchange/#presentation-definition",
+          "valueIdentifier": {
+            "system": "https://zorgstelsel.nl#presentation_definitions",
+            "value": "123"
+          }
         }
       ],
       "reference": "Organization/example-1/_history/1"
@@ -308,10 +319,21 @@ Dit VP bevat een handtekeing gezet door de zorginstelling. De update supplier ma
         {
           "url": "http://hl7.org/fhir/StructureDefinition/targetPath",
           "valueString": "Organization.name"
+        },
+        {
+          "url": "https://identity.foundation/presentation-exchange/#jsonpath-syntax-definition",
+          "valueString": "$.vc.credentialSubject.name"
         }
       ],
       "reference": "Organization/example-1/_history/1"
     }
+  ],
+  "activity": [{
+    "coding": [{
+      "system": "http://terminology.hl7.org/CodeSystem/v3-DocumentCompletion",
+      "code": "AU",
+      "display": "authenticated"
+    }]
   ],
   "agent": [
     {
@@ -394,6 +416,49 @@ Een update `Bundle` komt er dan vervolgens als volgt uit te zien:
 }
 ```
 
+Elk credential heeft een vastgestelde presentation definition die kan worden gebruikt voor het utivragen van credentials. In het geval van een ura credential is dat de volgende:
+
+```json
+{
+  "presentation_definition": {
+    "id": "1234",
+    "input_descriptors": [
+      {
+        "id": "uraCode",
+        "name": "Ura Organisatie Code",
+        "purpose": "Vaststellen dat de organisatie een URA code heeft",
+        "constraints": {
+          "fields": [
+            {
+              "path": ["$.type"],
+              "filter": {
+                "type": "string",
+                "const": "ZorgaanbiederCredential"
+              }
+            },
+            {
+              "id": "name",
+              "path": ["$.credentialSubject.name"],
+              "filter": {
+                "type": "string"
+              }
+            },
+            {
+              "path": ["$.issuer"],
+              "purpose": "Whe can only accept credentials from a trusted issuer",
+              "filter": {
+                "type": "string",
+                "pattern": "^did:web:cibg.nl$"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+```
+
 Zodra een **Update consumer** een update verricht bij de **Update Supplier** kan deze de **Provenance** resource gebruiken om te verifiëren dat de gegevens authentiek:
 
 - De VC is uitegeven door de juiste authentieke bron door de `issuer` van de VC te controleren
@@ -401,6 +466,35 @@ Zodra een **Update consumer** een update verricht bij de **Update Supplier** kan
 - De _Update Supplier_ is de juiste partij door de `aud` in de presentation te gebruiken om het DID document van de _Update Supplier_ op te halen en met de publieke sleutel de tweede provenance op de gehele bundle te verifiëren
 
 Er is nog een optimalisatie mogelijk om voor de DID methode van de _Update Supplier_ een `did:jwk` te gebruiken, zodat de resolve stap overgeslagen kan worden. Dit kan omdat de identiteit van de Update Supplier buiten de synchronizatie stap waarschijnlijk niet hoeft te worden vastgesteld. Dit is echter een implementatie detail.
+
+### Validatie
+
+#### Update Supplier
+
+1. Controleer of de issuer van de VC een vertrouwde partij is
+2. Controleer of de VC is ondertekend door de issuer
+   1. Resolve de DID van de issuer
+   2. Verifieer de handtekening van de VC met de publieke sleutel van de issuer
+3. Controleer of de VC niet is ingetrokken
+   1. Controleer de revocation status van de VC bij de issuer
+4. Controleer of de VC nog geldig is (expiration date)
+5. Controleer of de VC is gepresenteerd aan de Update Supplier
+   1. Verifieer de handtekening van de VP met de publieke sleutel van de holder
+   2. Controleer of de aud claim in de VP overeenkomt met de DID van de Update Supplier
+
+#### Update Consumer
+
+Bij een update operatie van de Update Consumer krijgt deze een `Bundle` terug van de Update Supplier. De Update Consumer moet de volgende stappen uitvoeren om de gegevens te valideren:
+
+1. Controleer of de Provenance van de `Bundle` is ondertekend door de Update Supplier
+   1. Resolve de DID van de Update Supplier
+   2. Verifieer de handtekening van de Provenance met de publieke sleutel van de Update Supplier
+2. Voor elk van beschermde attributen in de resources in de bundle:
+   1. Vind de bijbehorende provenance entry
+   2. Controleer of de VC in de proof is ondertekend door de authentieke de issuer
+      1. Resolve de DID van de issuer
+      2. Verifieer de handtekening van de VC met de publieke sleutel van de issuer
+   3. Controleer of de VC voldoet aan de `presentation_definition` die hoort bij dit attribuut
 
 ## 7. Use Cases
 
@@ -426,3 +520,7 @@ Er is nog een optimalisatie mogelijk om voor de DID methode van de _Update Suppl
 A. Technische specificaties
 B. Voorbeeld implementaties
 C. Referenties en bronnen
+
+```
+
+```
