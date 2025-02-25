@@ -1,3 +1,5 @@
+# Vertrouwen van gegevens in een mCSD adresseringsfunctie
+
 ## 1. Inleiding
 
 Het mCSD profiel geeft ons een manier een adresseringsfunctie te ontwikkelen die diverse bronnen van informatie kan brengen bij diverse consumenten van deze informatie. Het profiel is gebaseerd op de HL7 FHIR standaard en maakt gebruik van de RESTful API's om informatie uit te wisselen. De kracht van dit profiel is dat organisaties zelf in staat zijn gegevens over zichzelf bekend te maken en dat het aanbieden van deze gegevens losgekoppeld is van de consumptie er van. Dit maakt het profiel schaalbaar en flexibel.
@@ -145,7 +147,23 @@ Voorbeeld structuur:
 
 Een VC maakt claims dus verifieerbaar en betrouwbaar binnen het gedistribueerde netwerk van de adresseringsfunctie.
 
-### 5.2 Decentralized Identifiers (DIDs)
+### 5.2 Uitwisselprotocol voor Verifiable Credentials
+
+Verifiable credentials moeten worden uitgewisseld tussen uitgever en houder en tussen houder en verificateur. Dit kan op diverse manieren gebeuren, maar de standaarden van de OpenID Foundation heeft momenteel de meeste adoptie bij de diverse internationale wallets.
+
+De twee belangrijkste standaarden zijn:
+
+#### 5.2.1 OpenID4VCI
+
+[OpenID4VCI](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) staat voor "OpenID for Verifiable Credential Issuance". Het is een standaard voor het uitgeven van Verifiable Credentials door een Issuer aan een Holder. Het protocol is een uitbreiding op OAuth 2.0 en OpenID Connect. Het idee is dat een Verifiable Credential een **Resource** is die kan worden opgevraagd door een **Client**. Hiervoor heeft de **Client** een AccessToken nodig die het op diverse manieren kan verkrijgen. Een wallet kan zelf een verzoek doen om een credential, of een issuer kan een credential aanbieden aan een wallet. Dit zijn respectievelijk de Wallet initiated or Issuer initiated flows.
+
+Als de wallet een AccessToken heeft kan het vervolgens het Verifiable Credential ophalen en opslaan in de wallet.
+
+#### 5.2.2 OpenID4VP
+
+[OpenID4VP](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) staat voor "OpenID for Verifiable Presentations". Het is een standaard voor het presenteren van Verifiable Credentials als Verifiable Presentation door een Holder aan een Verifier. Het stelt de verifier in staat een set van Verifiable Crededentials op te vragen en vervolgens het eigenaarschap van de houder vast te stellen. Het uitvragen gebeurt door middel van een speciaal query formaat [DIF.PresentationExchange](https://identity.foundation/presentation-exchange/spec/v2.1.1/). De verifier kan vervolgens de presentatie valideren en de claims controleren.
+
+### 5.3 Decentralized Identifiers (DIDs)
 
 Hoe kunnen deze Verifiable Credentials gebruikt worden door een houder om zijn identiteit te bewijzen?
 Hiervoor gebruikenn we cryptografische identifiers die volledig onder controle staan van de eigenaar, zonder afhankelijkheid van een centrale autoriteit. Om dit eigenaarschap aan te tonen kan de houder de VC nogmaal ondertekenen met een private key. De verificateur kan dan de VC verifiëren met de publieke sleutel van de houder. De vraag is dan hoe de verificateur de publieke sleutel van de houder kan vinden. Normaliter wordt er gebruik van een Public Key Infrastructure. Binnen het SSI model is hier een decentrale manier voor bedacht. Elke partij in het netwerk heeft een identifier die leidt naar deze publieke sleutel. Deze identifier noemen we een Decentralized Identifier (DID).
@@ -169,7 +187,7 @@ Voorbeeld van een DID:
 - `did:web:ziekenhuis-x.nl`
 - `did:web:cibg.nl`
 
-### 5.3 Mapping van SSI concepten naar mCSD
+### 5.4 Mapping van SSI concepten naar mCSD
 
 Hoe kunnen de SSI concepten worden toegepast op het mCSD profiel? We kunnen de SSI rollen als volgt mappen op de mCSD rollen:
 
@@ -186,23 +204,23 @@ De variaties in de opties hebben impact op de volgende aspecten:
 - het ontwerp en hoeveel maatwerkt nodig is om de SSI concepten te integreren met het mCSD profiel.
 - de hoeveelheid validatie operaties wat moet worden uitgevoerd opdat de Update Consumer de gegevens kan vertrouwen.
 
-#### 5.3.1 Optie 1: Getrapte validatie
+#### 5.4.1 Optie 1: Getrapte validatie
 
 In Optie 1 heeft de (zorg)organisatie een eigen wallet. De Update Supplier is een dienstverlener die handelt voor de (zorg)organisatie, maar geen vertrouwde partij is. De noodzaak van beperkt vertrouwen is relevant als er maar een paar van dit soort dienstverleners ontstaan en de Update Consumer bijvoorbeeld niet het eigen EPD is.
 
 Bij een aanpassing van een claim in het adresboek, moet (zorg)organisatie een bewijs presenteren in een Verifiable Presentation aan de Update Supplier welke ze naast de FHIR Resources opslaat in bijvoorbeeld een `Provenance` resource. Bij een synchronisatie stap moet de Update supplier in de bundle met de FHIR resources, ook Verifiable Presentations aanbieden. Om aan te tonen dat de Update Supplier daadwerkerlijk geauthoriseerd is, ondertekent het de bundle zelf met een private key die hoort bij de `DID`. De Update Consumer valideert bij de synchronisatie stap de claims in de Verifiable Presentation, vergelijkt ze met de data in de resources en valideert de handtekening op de Bundle. De (zorg)organisatie hoeft maar eenmalig de data aan de Update Supplier aan te tonen. De Update Consumer kan de "machtiging" van de Update Supplier controleren door de presentatie te valideren. De invulling van `Provencance` resources vergt wel land specifieke profielen wat de implementaties complexer maakt.
 
-#### 5.3.2 Optie 2: Directe validatie met Update Supplier als Holder
+#### 5.4.2 Optie 2: Directe validatie met Update Supplier als Holder
 
 In Optie 2 heeft de Update Supplier een vertrouwde rol en heeft zelf (toegang tot) de organisatie wallet. Dit vertrouwen is belangrijk want met de toegang tot de wallet kan de Update Supplier zich voordoen als de (zorg)organisatie bij elke authorisatie stap in het zorg informatie stelsel. Als we landelijk maar een beperkt aantal dienstverleners krijgen is deze optie af te raden.
 
 Omdat de Update Supplier nu zelf ook de holder is, kunnen de claims als Verifiable Credential in plaats van Verifiable Presentation in een provencance worden opgeslagen. De Bundle kan vervolgens als een vorm van een presentation worden ondertekend waardoor de Update Supplier aantoont de Holder te zijn. De Update Supplier moet wel een eigen DID per (zorg)organisatie hebben om te voorkomen dat claims van (zorg)organisaties allemaal in een wallet terechtkomen.
 
-#### 5.3.3 Optie 3: Directe validatie met Organisatie als Holder
+#### 5.4.3 Optie 3: Directe validatie met Organisatie als Holder
 
 In Optie 3 is de (zorg)organisatie zelf de holder en de Update Supplier een intermediate. De Update Supplier heeft geen toegang tot de wallet van de (zorg)organisatie. De Update Supplier voegt aan de claims een hint toe waarmee de Update Consumer zelf bij de (zorg)organisatie een validatie stap kan uitvoeren. Deze optie past het beste bij bestaande invulling van SSI waarbij vertrouwen direct is tussen Holder en Verifier. Ook hoeven er weinig uitbreidingen op het mCSD profiel te worden verricht omdat alleen de hint bij de claim moet worden toegevoegd. Het nadeel van deze aanpak is dat elke Update Consumer, na het binnenkrijgen van nieuwe claims, direct bij de Holder een validatie stap moet uitvoeren. Nu is het wel zo dat deze de bewijzen een langdurig geldig zijn en het adresboek over tijd organisch zal groeien. Alleen bij een nieuwe Update Consumer die geintresseerd is in het gehele adresboek en alle claims wil valideren zal deze validatie periode langer zijn.
 
-### 5.4 Evaluatie van de opties
+### 5.5 Evaluatie van de opties
 
 | Optie | Vertrouwen                                                                                          | Ontwerp                                                                                                                     | Schaalbaarheid                                                            |
 | ----- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -214,7 +232,7 @@ In Optie 3 is de (zorg)organisatie zelf de holder en de Update Supplier een inte
 
 ### 6.1 Mapping van SSI rollen naar mCSD rollen
 
-#### Zorgorganisatie
+#### (Zorg)organisatie
 
 Functioneert als **Holder**
 
@@ -243,7 +261,7 @@ Functioneert primair als **Verifier**:
 
 De Selective consumer heeft een vertrouwensrelatie met de **Selective Supplier**. Het is dus niet nodig om de credentials te verifiëren.
 
-#### Trusted Issuers (Externe Rol)
+#### Issuers
 
 - UZI-register, CIBG, IGJ etc.
 - Geen directe mCSD rol
