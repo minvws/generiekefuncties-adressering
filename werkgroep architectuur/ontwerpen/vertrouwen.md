@@ -82,16 +82,15 @@ Om bovenstaande redenen gaat de voorkeur nu uit naar optie 2: een directe koppel
 
 ## 4. Directe koppeling met authentieke bronnen
 
-Om te zorgen dat een Update Consumer zeker weet dat een Organisation een bepaalde claim kan maken, kan de Update Consumer de claims direct ophalen bij de betreffende authentieke bron. Doordat de update consumer de authentieke bron vertrouwd met een aantal geselecteerde claims, weet deze dat ze kloppen. De authentieke bron vermeld naast de claims ook een afgesproken identifier die de Update Consumer kan gebruiken om de claims samen te voegen met andere Organisation Resources. Zo wordt er een compleet beeld van de organisatie opgebouwd.
+Om te zorgen dat een Update Consumer zeker weet dat een Organisation een bepaalde claim kan maken, kan de Update Consumer de claims direct ophalen bij de betreffende authentieke bron. Doordat de update consumer de authentieke bron vertrouwt met een aantal geselecteerde claims, weet deze dat ze kloppen. De authentieke bron vermeld naast de claims ook een afgesproken identifier die de Update Consumer kan gebruiken om de claims samen te voegen met andere Organisation Resources. Zo wordt er een compleet beeld van de organisatie opgebouwd.
 
 ### 4.1 Zorgbreede identificerende identifiers
 
 Om te zorgen dat we FHIR resources aan elkaar kunnen matchen hebbben we uniek identifieceren identifiers nodig. Dit valt eigenlijk buiten scope van de adresseringsfunctie en onderdeel van de functie Identificatie en Authenticatie.
 Toch willen we graag een voorschot nemen op een invulling hiervan om deze oplossingsrichting te kunnen toentsen. Daarom kiezen we voor adresseringsfunctie de volgende identifiers:
 
-- Organisatie - URA
+- Zorgorganisatie - URA
 - Lokatie - URA
-- Zorgaanbieder - UZI
 
 Andere resources zoals HealthcareServices, PractitionerRole, en Endpoint zullen voorlopig nog geen unieke identifier krijgen en daarmee dus ook geen claims uit authentieke bronnen krijgen.
 
@@ -101,16 +100,15 @@ Zoals bijvoorbeeld het CIBG de authentieke bron is van de URA claim, is de zorgi
 
 ### 4.3 Voorbeeld
 
-We gaan uit an een voorbeeld van een Zorinstelling met 3 lokaties.
-De zorginstelling heeft de volgende claims:
+We gaan uit van een voorbeeld van een zorinstelling met de volgende eigenschappen:
 
 - URA: 123
-- Organisatie naam: Medisch Centrum Oost
+- Organisatier-naam: Medisch Centrum Oost
 - AGB-code: 456
-- Organisatie type: Ziekenhuis
+- Organisatie-type: Ziekenhuis
 - Update Supplier Endpoint: https://update-supplier.example.nl/organization/een-uuid-11-889
 
-De claims URA voor organisatie en lokaties organisatie naam en update supplier endpoint komen uit het CIBG. De AGB-code en organisatie type komen uit het Vektis register.
+De claims *URA* en *naam* en *update supplier endpoint* worden uitgegeven door het CIBG. De AGB-code en organisatie type worden uitgegeven door Vektis.
 
 Een Update Consumer zal zowel het CIBG als Vektis geconfigureerd hebben als authentieke bron voor bovenstaande claims. Deze bronnen zullen als eerst geraadpleegd worden:
 
@@ -155,7 +153,7 @@ Geeft:
 GET https://mcsd.vektis.nl/organization/_history
 ```
 
-Geeft de volgende resource met daarin een type en agb code identifier. De URA identifier moet altijd aanwezig zijn om de resources aan elkaar te kunnen correleren.
+Antwoord met de volgende resource-bundle met daarin een organisatie-type en AGB-code. De URA identifier moet altijd aanwezig zijn om de resources aan elkaar te kunnen correleren:
 
 ```json
 {
@@ -191,7 +189,7 @@ Geeft de volgende resource met daarin een type en agb code identifier. De URA id
 }
 ```
 
-De Update supplier kan nu een request sturen naar het update-supplier endpoint van de zorginsteling voor de rest van de informatie. Dit endpoint geeft een organization resource terug met daarin het URA als identifier, een contact entry met telefoonnummer en een bgz-fhir endpoint. Voordat de Update Consumer deze gegevens mag overnemen moet hij controleren of de URA identifier overeenkomt met dat van het CIBG.
+De Update Consumer weet nu het *update supplier endpoint* van de zorginsteling waar rest van de informatie kan worden opgehaald. Dit endpoint geeft een organization resource terug met daarin wederom het URA als identifier en aanvullend een contact entry met telefoonnummer en een bgz-fhir endpoint. Voordat de Update Consumer deze gegevens mag overnemen moet hij controleren of de URA identifier overeenkomt met de verwachte waarde uit het CIBG om te voorkomen dat de Update Supplier zich voordoet als een andere zorginstelling.
 
 ```http
 GET https://update-supplier.example.nl/organization/een-uuid-11-889/history
@@ -237,7 +235,7 @@ GET https://update-supplier.example.nl/organization/een-uuid-11-889/history
 }
 ```
 
-De update consumer kan deze resources nu samenvoegen. Dit kan door de URA identifier te gebruiken om de resources aan elkaar te koppelen. De update consumer kan nu een complete resource samenstellen met daarin alle claims van de zorginstelling.
+De Update Consumer kan deze resources nu samenvoegen. Dit kan door de URA identifier te gebruiken om de resources aan elkaar te koppelen. De update consumer kan nu een complete resource samenstellen met daarin alle claims van de zorginstelling. De indien de Update Consumer enkel een specifieke toepassing bedient, kan er voor worden gekozen een relevant subset van de ontvangen informatie over te nemen. Bijvoorbeeld: als de Update Consumer een BGZ applicatie bedient, zal een MedMij endpoint niet relevant zijn.
 
 ```json
 {
